@@ -1,5 +1,4 @@
-from django.db import models
-
+from django.db import models,transaction
 
 class Category(models.Model):
 
@@ -9,6 +8,15 @@ class Category(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     active = models.BooleanField(default=False)
+    
+    @transaction.atomic
+    def disable(self):
+        if self.active is False:
+        # Ne faisons rien si la catégorie est déjà désactivée
+            return
+        self.active = False
+        self.save()
+        self.products.update(active=False)
 
     def __str__(self):
         return self.name
