@@ -2,6 +2,10 @@ from rest_framework.serializers import ModelSerializer,SerializerMethodField
 
 from shop.models import Article, Category, Product
 
+from rest_framework import serializers
+
+
+
 
 
         
@@ -11,6 +15,7 @@ class ProductSerializer(ModelSerializer):
     class Meta:
         model = Product
         fields=['id', 'name','category_id','date_created','date_updated','articles']
+    
     def get_articles(self,instance):
         queryset=instance.articles.filter(active=True)
         serializer=ArticleSerializer(queryset,many=True)
@@ -23,6 +28,14 @@ class ArticleSerializer(ModelSerializer):
         model=Article
         fields=['id','date_created','price','product_id','date_updated','name']
         
+    def validate(self, data):
+        price=data['price']
+        active= Product.objects.get(id=data['product_id']).active
+        if not active :
+            raise serializers.ValidationError('Ce produit est désactivé') 
+        if price<1:
+            raise serializers.ValidationError('Le prix doit être supérieur à 1$')
+        return data
         
 class CategoryDetailSerializer(ModelSerializer):
 
@@ -33,6 +46,11 @@ class CategoryDetailSerializer(ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'date_created', 'date_updated', 'name', 'products']
+    # methode pour definir une validation sur le champ du nom
+    def validate_name(self,value):
+        if Category.objects.filter(name=value).exists():
+            raise serializers.ValidationError('Cette catégorie existe déjà')
+        return value
 
     def get_products(self, instance):
         # Le paramètre 'instance' est l'instance de la catégorie consultée.
@@ -55,5 +73,10 @@ class CategorySerializer(ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name']
+    
+    def validate_name(self,value):
+        if Category.objects.filter(name=value).exists():
+            raise serializers.ValidationError('Cette catégorie existe déjà')
+        return value
 
  
